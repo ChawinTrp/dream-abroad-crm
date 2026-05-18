@@ -1,41 +1,39 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutGrid, BarChart3 } from 'lucide-react';
-import { clsx } from 'clsx';
+import { Outlet } from 'react-router-dom';
+import { useMemo } from 'react';
+import { TopBar } from './TopBar';
+import { useFetch } from '../api/hooks';
+import type { Customer, Agent } from '../api/types';
 
-const navItems = [
-  { to: '/board', label: 'Stage Board', icon: LayoutGrid },
-  { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-];
+function idleHours(lastMessageAt: string | null, lastReplyAt: string | null): number {
+  if (!lastMessageAt) return 0;
+  const lastIn = new Date(lastMessageAt).getTime();
+  const lastOut = lastReplyAt ? new Date(lastReplyAt).getTime() : 0;
+  if (lastOut >= lastIn) return 0;
+  return (Date.now() - lastIn) / 3600000;
+}
 
 export function Layout() {
+  const { data: customers } = useFetch<Customer[]>('/customers');
+  const { data: agents } = useFetch<Agent[]>('/agents');
+
+  const unattendedCount = useMemo(
+    () =>
+      (customers ?? []).filter(
+        (c) => idleHours(c.lastMessageAt, c.lastReplyAt) > 8,
+      ).length,
+    [customers],
+  );
+
+  // Default current agent = first agent in list
+  const currentAgent = useMemo(
+    () => (agents ?? []).find((a) => a.role === 'agent') ?? null,
+    [agents],
+  );
+
   return (
-    <div className="flex h-full">
-      <aside className="w-56 bg-white border-r border-border flex flex-col shrink-0">
-        <div className="p-5 border-b border-border">
-          <h1 className="text-lg font-bold text-ink">DreamAbroad</h1>
-          <p className="text-xs text-muted">Education CRM</p>
-        </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                clsx(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-ink text-white'
-                    : 'text-muted hover:bg-cream hover:text-ink',
-                )
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-      <main className="flex-1 overflow-auto bg-cream">
+    <div className="flex flex-col h-full">
+      <TopBar unattendedCount={unattendedCount} currentAgent={currentAgent} />
+      <main className="flex-1 overflow-auto" style={{ background: '#F7F6F3' }}>
         <Outlet />
       </main>
     </div>
