@@ -39,7 +39,7 @@ services:
     ports:
       - "${WEB_PORT:-5173}:5173"
     environment:
-      VITE_API_URL: http://localhost:${API_PORT:-3000}
+      VITE_API_URL: http://api:3000
     depends_on:
       - api
     volumes:
