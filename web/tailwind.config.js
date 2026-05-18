@@ -1,0 +1,45 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        cream: '#F7F6F3',
+        ink: '#1A1815',
+        muted: '#6F6B65',
+        border: '#E8E6E1',
+        'stage-lead': '#9CA29B',
+        'stage-active': '#3B82F6',
+        'stage-applied': '#14B8A6',
+        'stage-enrolled': '#22C55E',
+        'tag-school-bg': '#EEEDFE',
+        'tag-school-border': '#AFA9EC',
+        'tag-school-text': '#3C3489',
+        'tag-interested-bg': '#E1F5EE',
+        'tag-interested-border': '#5DCAA5',
+        'tag-interested-text': '#085041',
+        'tag-country-bg': '#FAECE7',
+        'tag-country-border': '#F0997B',
+        'tag-country-text': '#712B13',
+        'tag-program-bg': '#FAEEDA',
+        'tag-program-border': '#EF9F27',
+        'tag-program-text': '#633806',
+        'idle-low': '#EFEEEA',
+        'idle-med': '#FDF2E0',
+        'idle-high': '#FCE7E7',
+        urgent: '#DC2626',
+      },
+      fontFamily: {
+        sans: [
+          'Plus Jakarta Sans',
+          'Noto Sans Thai',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'sans-serif',
+        ],
+      },
+    },
+  },
+  plugins: [],
+};

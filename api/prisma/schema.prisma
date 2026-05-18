@@ -1,0 +1,131 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model StageDefinition {
+  id        Int        @id @default(autoincrement())
+  key       String     @unique
+  label     String
+  dotColor  String     @map("dot_color")
+  sortOrder Int        @map("sort_order")
+  isActive  Boolean    @default(true) @map("is_active")
+  customers Customer[]
+
+  @@map("stage_definitions")
+}
+
+model Agent {
+  id          Int    @id @default(autoincrement())
+  name        String
+  email       String @unique
+  role        String @default("agent")
+  initials    String
+  avatarColor String @map("avatar_color")
+
+  assignedCustomers Customer[] @relation("AssignedAgent")
+  scoredCustomers   Customer[] @relation("ScoreUpdater")
+  repliedCustomers  Customer[] @relation("LastReplier")
+  sentMessages      Message[]
+  taggedItems       CustomerTag[]
+  events            CustomerEvent[]
+
+  @@map("agents")
+}
+
+model Customer {
+  id              Int       @id @default(autoincrement())
+  lineUserId      String?   @unique @map("line_user_id")
+  displayName     String    @map("display_name")
+  initials        String
+  avatarColor     String    @map("avatar_color")
+  stageId         Int       @map("stage_id")
+  stage           StageDefinition @relation(fields: [stageId], references: [id])
+  commitmentScore Int?      @map("commitment_score")
+  urgencyFlag     Boolean   @default(false) @map("urgency_flag")
+  notes           String?
+  assignedAgentId Int?      @map("assigned_agent_id")
+  assignedAgent   Agent?    @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  scoreUpdatedBy  Int?      @map("score_updated_by")
+  scoreUpdater    Agent?    @relation("ScoreUpdater", fields: [scoreUpdatedBy], references: [id])
+  scoreUpdatedAt  DateTime? @map("score_updated_at")
+  lastMessageAt   DateTime? @map("last_message_at")
+  lastReplyAt     DateTime? @map("last_reply_at")
+  lastReplyBy     Int?      @map("last_reply_by")
+  lastReplier     Agent?    @relation("LastReplier", fields: [lastReplyBy], references: [id])
+  followedAt      DateTime? @map("followed_at")
+  totalMessages   Int       @default(0) @map("total_messages")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  tags     CustomerTag[]
+  messages Message[]
+  events   CustomerEvent[]
+
+  @@map("customers")
+}
+
+model TagDefinition {
+  id          Int     @id @default(autoincrement())
+  tagType     String  @map("tag_type")
+  label       String
+  countryCode String? @map("country_code")
+  sortOrder   Int     @default(0) @map("sort_order")
+  isActive    Boolean @default(true) @map("is_active")
+  colorBg     String? @map("color_bg")
+  colorBorder String? @map("color_border")
+  colorText   String? @map("color_text")
+
+  customerTags CustomerTag[]
+
+  @@unique([tagType, label])
+  @@map("tag_definitions")
+}
+
+model CustomerTag {
+  id              Int      @id @default(autoincrement())
+  customerId      Int      @map("customer_id")
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tagDefinitionId Int      @map("tag_definition_id")
+  tagDefinition   TagDefinition @relation(fields: [tagDefinitionId], references: [id])
+  taggedBy        Int?     @map("tagged_by")
+  tagger          Agent?   @relation(fields: [taggedBy], references: [id])
+  taggedAt        DateTime @default(now()) @map("tagged_at")
+
+  @@unique([customerId, tagDefinitionId])
+  @@map("customer_tags")
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  customerId    Int      @map("customer_id")
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  direction     String
+  msgType       String   @default("text") @map("msg_type")
+  body          String
+  sentAt        DateTime @map("sent_at")
+  agentId       Int?     @map("agent_id")
+  agent         Agent?   @relation(fields: [agentId], references: [id])
+  lineMessageId String?  @map("line_message_id")
+
+  @@index([customerId, sentAt])
+  @@map("messages")
+}
+
+model CustomerEvent {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  agentId    Int?     @map("agent_id")
+  agent      Agent?   @relation(fields: [agentId], references: [id])
+  eventType  String   @map("event_type")
+  oldValue   String?  @map("old_value")
+  newValue   String?  @map("new_value")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([customerId, createdAt])
+  @@map("customer_events")
+}

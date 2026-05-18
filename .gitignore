@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+.prisma/
+api/node_modules/
+web/node_modules/
+api/dist/
+web/dist/
