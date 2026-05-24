@@ -99,6 +99,15 @@ async function main() {
   const tagMap: Record<string, number> = {};
   for (const t of createdTags) tagMap[`${t.tagType}:${t.label}`] = t.id;
 
+  // Demo customers + messages — only seeded when SEED_DEMO=true.
+  // Real LINE customers come via webhook; keep DB clean by default.
+  if (process.env.SEED_DEMO !== 'true') {
+    console.log('Config seeded (stages, tags, agents). Skipping demo customers.');
+    console.log('Set SEED_DEMO=true to also seed the 12 demo customers.');
+    return;
+  }
+  console.log('SEED_DEMO=true — seeding demo customers and messages...');
+
   // Customers
   const customersData = [
     { lineUserId: 'U9f3a12345', displayName: 'Somchai Wattanakul', initials: 'SW', avatarColor: '#7C6FE0', stage: 'active', score: 5, urgent: true, agent: a1, followedAt: '2025-01-03', lastMessageAt: '2025-01-15T09:22:00Z', lastReplyAt: '2025-01-15T11:15:00Z', lastReplyBy: a1, totalMessages: 7, tags: [['current_school','Chulalongkorn'],['interested_school','Waseda'],['interested_school','Keio'],['country','Japan'],['program','MBA']], notes: 'Attended open day Jan 2. Gap year student — targeting Oct intake. Send Waseda scholarship PDF.' },
