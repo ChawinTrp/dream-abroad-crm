@@ -105,7 +105,8 @@ export class WebhooksService {
     const lineUserId = event.source?.userId;
     if (!lineUserId) return null;
 
-    const customer = await this.findOrCreateCustomer(lineUserId);
+    // Discovered via message — we don't know when they originally followed
+    const customer = await this.findOrCreateCustomer(lineUserId, 'message');
 
     return this.messages.createInbound({
       customerId: customer.id,
@@ -118,12 +119,16 @@ export class WebhooksService {
     const lineUserId = event.source?.userId;
     if (!lineUserId) return null;
 
-    await this.findOrCreateCustomer(lineUserId);
+    // Real follow event — we know exactly when they followed
+    await this.findOrCreateCustomer(lineUserId, 'follow');
     this.logger.log(`New LINE follower: ${lineUserId}`);
     return null;
   }
 
-  private async findOrCreateCustomer(lineUserId: string) {
+  private async findOrCreateCustomer(
+    lineUserId: string,
+    source: 'follow' | 'message',
+  ) {
     let customer = await this.prisma.customer.findUnique({
       where: { lineUserId },
     });
@@ -155,11 +160,16 @@ export class WebhooksService {
         avatarColor: pickColor(lineUserId),
         pictureUrl,
         stageId: leadStage.id,
-        followedAt: new Date(),
+        // followedAt is honest: only set when we saw the actual follow event.
+        // Pre-existing followers discovered via message get null — we don't
+        // know their true follow date and won't fake it.
+        followedAt: source === 'follow' ? new Date() : null,
       },
     });
 
-    this.logger.log(`Created customer from LINE: ${displayName} (${lineUserId})`);
+    this.logger.log(
+      `Created customer from LINE (${source}): ${displayName} (${lineUserId})`,
+    );
     return customer;
   }
 }

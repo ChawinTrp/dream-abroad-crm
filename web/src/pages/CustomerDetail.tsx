@@ -182,8 +182,14 @@ export function CustomerDetail() {
             )}
             <div>
               <h2 className="text-lg font-bold text-ink">{customer.displayName}</h2>
-              {customer.followedAt && (
-                <p className="text-xs text-muted">LINE follower since {new Date(customer.followedAt).toLocaleDateString()}</p>
+              {customer.followedAt ? (
+                <p className="text-xs text-muted">
+                  LINE follower since {new Date(customer.followedAt).toLocaleDateString()}
+                </p>
+              ) : (
+                <p className="text-xs text-muted italic">
+                  Discovered via message — follow date unknown
+                </p>
               )}
             </div>
           </div>
