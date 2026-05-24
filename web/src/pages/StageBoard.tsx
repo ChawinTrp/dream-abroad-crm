@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useFetch } from '../api/hooks';
 import type { Customer, StageDefinition, Agent, TagDefinition } from '../api/types';
+import { useBoardFilters } from '../contexts/board-filters';
+import { applyBoardFilters } from '../api/customer-list';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -136,7 +138,7 @@ function FilterChip({
   );
 }
 
-function SortMenu({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function SortMenu({ value, onChange }: { value: string; onChange: (v: any) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const options = [
@@ -350,10 +352,10 @@ export function StageBoard() {
   const { data: agents } = useFetch<Agent[]>('/agents');
   const { data: allTags } = useFetch<TagDefinition[]>('/tags?type=country');
 
-  const [search, setSearch] = useState('');
-  const [agentFilter, setAgentFilter] = useState<'all' | 'mine' | number>('all');
-  const [countryFilter, setCountryFilter] = useState<string>('All');
-  const [sort, setSort] = useState('priority');
+  const {
+    search, agentFilter, countryFilter, sort,
+    setSearch, setAgentFilter, setCountryFilter, setSort, reset,
+  } = useBoardFilters();
 
   // Current user = first agent
   const currentAgent = useMemo(() => (agents ?? []).find((a) => a.role === 'agent'), [agents]);
@@ -365,62 +367,24 @@ export function StageBoard() {
     [allTags],
   );
 
-  const filtered = useMemo(() => {
-    if (!customers) return [];
-    const q = search.trim().toLowerCase();
-    return customers.filter((c) => {
-      if (agentFilter === 'mine' && c.assignedAgentId !== currentAgent?.id) return false;
-      if (typeof agentFilter === 'number' && c.assignedAgentId !== agentFilter) return false;
-      if (countryFilter !== 'All') {
-        const hasCountry = c.tags.some(
-          (t) => t.tagDefinition.tagType === 'country' && t.tagDefinition.label === countryFilter,
-        );
-        if (!hasCountry) return false;
-      }
-      if (q) {
-        const hay = [
-          c.displayName,
-          c.notes ?? '',
-          ...c.tags.map((t) => t.tagDefinition.label),
-        ].join(' ').toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [customers, search, agentFilter, countryFilter, currentAgent]);
+  const filtered = useMemo(
+    () =>
+      applyBoardFilters(customers ?? [], {
+        search, agentFilter, countryFilter, sort,
+        currentAgentId: currentAgent?.id,
+      }),
+    [customers, search, agentFilter, countryFilter, sort, currentAgent],
+  );
 
+  // `filtered` is already sorted by applyBoardFilters — just group by stage,
+  // preserving order.
   const grouped = useMemo(() => {
     if (!stages) return {};
     const g: Record<number, Customer[]> = {};
     stages.forEach((s) => { g[s.id] = []; });
     filtered.forEach((c) => { if (g[c.stageId]) g[c.stageId].push(c); });
-
-    // Sort within each column
-    Object.values(g).forEach((col) => {
-      col.sort((a, b) => {
-        switch (sort) {
-          case 'idle': {
-            const ah = idleHours(a.lastMessageAt, a.lastReplyAt);
-            const bh = idleHours(b.lastMessageAt, b.lastReplyAt);
-            return bh - ah;
-          }
-          case 'commitment':
-            return (b.commitmentScore ?? 0) - (a.commitmentScore ?? 0);
-          case 'name':
-            return a.displayName.localeCompare(b.displayName);
-          default: {
-            if (a.urgencyFlag !== b.urgencyFlag) return a.urgencyFlag ? -1 : 1;
-            if ((b.commitmentScore ?? 0) !== (a.commitmentScore ?? 0))
-              return (b.commitmentScore ?? 0) - (a.commitmentScore ?? 0);
-            const ah = idleHours(a.lastMessageAt, a.lastReplyAt);
-            const bh = idleHours(b.lastMessageAt, b.lastReplyAt);
-            return bh - ah;
-          }
-        }
-      });
-    });
     return g;
-  }, [filtered, stages, sort]);
+  }, [filtered, stages]);
 
   const totalUrgent = filtered.filter((c) => c.urgencyFlag).length;
   const anyFilter = search || agentFilter !== 'all' || countryFilter !== 'All';
@@ -550,7 +514,7 @@ export function StageBoard() {
           {/* Clear filters */}
           {anyFilter && (
             <button
-              onClick={() => { setSearch(''); setAgentFilter('all'); setCountryFilter('All'); }}
+              onClick={reset}
               className="ml-auto inline-flex items-center gap-1 text-[11.5px] font-medium text-[#6F6B65] hover:text-[#1A1815] transition-colors whitespace-nowrap"
             >
               <X size={11} strokeWidth={2.2} />

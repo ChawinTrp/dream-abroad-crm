@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, ExternalLink,
@@ -8,6 +8,8 @@ import {
 import { useFetch } from '../api/hooks';
 import { api } from '../api/client';
 import type { Customer, Agent, StageDefinition, TagDefinition, MessageResponse } from '../api/types';
+import { useBoardFilters } from '../contexts/board-filters';
+import { applyBoardFilters } from '../api/customer-list';
 
 function SaveFlash({ show }: { show: boolean }) {
   if (!show) return null;
@@ -52,6 +54,33 @@ export function CustomerDetail() {
   const { data: stages } = useFetch<StageDefinition[]>('/stages');
   const { data: agents } = useFetch<Agent[]>('/agents');
   const { data: allTags } = useFetch<TagDefinition[]>('/tags');
+  const { data: allCustomers } = useFetch<Customer[]>('/customers');
+
+  const filters = useBoardFilters();
+  const currentAgent = useMemo(
+    () => (agents ?? []).find((a) => a.role === 'agent'),
+    [agents],
+  );
+
+  // Same ordered list the board shows, so prev/next walks the working set.
+  const orderedList = useMemo(
+    () =>
+      applyBoardFilters(allCustomers ?? [], {
+        search: filters.search,
+        agentFilter: filters.agentFilter,
+        countryFilter: filters.countryFilter,
+        sort: filters.sort,
+        currentAgentId: currentAgent?.id,
+      }),
+    [allCustomers, filters.search, filters.agentFilter, filters.countryFilter, filters.sort, currentAgent],
+  );
+
+  const currentIdx = useMemo(
+    () => orderedList.findIndex((c) => c.id === Number(id)),
+    [orderedList, id],
+  );
+  const prevCustomer = currentIdx > 0 ? orderedList[currentIdx - 1] : null;
+  const nextCustomer = currentIdx >= 0 && currentIdx < orderedList.length - 1 ? orderedList[currentIdx + 1] : null;
 
   const [savedField, setSavedField] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
@@ -65,6 +94,18 @@ export function CustomerDetail() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messagesRes]);
+
+  // Keyboard arrow nav (← →)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'ArrowLeft' && prevCustomer) navigate(`/customers/${prevCustomer.id}`);
+      if (e.key === 'ArrowRight' && nextCustomer) navigate(`/customers/${nextCustomer.id}`);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [prevCustomer, nextCustomer, navigate]);
 
   const flash = useCallback((field: string) => {
     setSavedField(field);
@@ -145,8 +186,27 @@ export function CustomerDetail() {
         <span className="text-sm text-muted">›</span>
         <span className="text-sm font-semibold text-ink">{customer.displayName}</span>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => navigate(`/customers/${customer.id - 1}`)} className="p-1 rounded hover:bg-cream"><ChevronLeft size={16} /></button>
-          <button onClick={() => navigate(`/customers/${customer.id + 1}`)} className="p-1 rounded hover:bg-cream"><ChevronRight size={16} /></button>
+          <button
+            onClick={() => prevCustomer && navigate(`/customers/${prevCustomer.id}`)}
+            disabled={!prevCustomer}
+            title={prevCustomer ? `← ${prevCustomer.displayName}` : 'No previous'}
+            className="p-1 rounded hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {currentIdx >= 0 && orderedList.length > 0 && (
+            <span className="text-[11px] text-muted tabular-nums px-1">
+              {currentIdx + 1} of {orderedList.length}
+            </span>
+          )}
+          <button
+            onClick={() => nextCustomer && navigate(`/customers/${nextCustomer.id}`)}
+            disabled={!nextCustomer}
+            title={nextCustomer ? `→ ${nextCustomer.displayName}` : 'No next'}
+            className="p-1 rounded hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={16} />
+          </button>
           {customer.lineUserId && (
             <a
               href={`https://chat.line.biz/${LINE_CHANNEL_ID}/chat/${customer.lineUserId}`}
