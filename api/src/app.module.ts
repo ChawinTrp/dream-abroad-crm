@@ -11,6 +11,7 @@ import { MessagesModule } from './messages/messages.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { ArchiveModule } from './archive/archive.module';
+import { SettingsModule } from './settings/settings.module';
 import { DevModule } from './dev/dev.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { DevModule } from './dev/dev.module';
     DashboardModule,
     WebhooksModule,
     ArchiveModule,
+    SettingsModule,
     ...(process.env.NODE_ENV !== 'production' ? [DevModule] : []),
   ],
 })

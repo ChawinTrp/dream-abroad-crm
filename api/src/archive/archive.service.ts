@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
+import { SettingsService } from '../settings/settings.service';
 
 export interface ArchiveResult {
   enrolledClosed: number;
@@ -17,6 +18,7 @@ export class ArchiveService {
   constructor(
     private prisma: PrismaService,
     private events: EventsService,
+    private settings: SettingsService,
   ) {}
 
   /**
@@ -42,10 +44,13 @@ export class ArchiveService {
   }
 
   async runArchive(): Promise<ArchiveResult> {
-    const enrolledThresholdDays = Number(
-      process.env.ENROLLED_ARCHIVE_DAYS ?? '90',
+    // DB setting wins over env var, env over hardcoded default.
+    const enrolledThresholdDays = await this.settings.getNumber(
+      'enrolled_archive_days', 'ENROLLED_ARCHIVE_DAYS', 90,
     );
-    const leadColdDays = Number(process.env.LEAD_COLD_DAYS ?? '90');
+    const leadColdDays = await this.settings.getNumber(
+      'lead_cold_days', 'LEAD_COLD_DAYS', 90,
+    );
 
     const enrolledClosed = await this.closeEnrolled(enrolledThresholdDays);
     const leadsArchived = await this.archiveColdLeads(leadColdDays);

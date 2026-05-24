@@ -20,12 +20,14 @@ model StageDefinition {
 }
 
 model Agent {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
-  email       String @unique
-  role        String @default("agent")
+  email       String  @unique
+  role        String  @default("agent")  // "agent" | "manager" | "admin"
   initials    String
-  avatarColor String @map("avatar_color")
+  avatarColor String  @map("avatar_color")
+  isActive    Boolean @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   assignedCustomers Customer[] @relation("AssignedAgent")
   scoredCustomers   Customer[] @relation("ScoreUpdater")
@@ -35,6 +37,17 @@ model Agent {
   events            CustomerEvent[]
 
   @@map("agents")
+}
+
+// Runtime-configurable system settings (override .env defaults).
+// Examples: enrolled_archive_days, lead_cold_days, idle_med_hours
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy Int?     @map("updated_by")
+
+  @@map("settings")
 }
 
 model Customer {

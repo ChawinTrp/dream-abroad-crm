@@ -5,14 +5,35 @@ import { PrismaService } from '../prisma/prisma.service';
 export class StagesService {
   constructor(private prisma: PrismaService) {}
 
-  findAll() {
+  findAll(includeInactive = false) {
     return this.prisma.stageDefinition.findMany({
-      where: { isActive: true },
+      where: includeInactive ? {} : { isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
   }
 
   findOne(id: number) {
     return this.prisma.stageDefinition.findUniqueOrThrow({ where: { id } });
+  }
+
+  create(data: {
+    key: string;
+    label: string;
+    dotColor: string;
+    sortOrder: number;
+  }) {
+    return this.prisma.stageDefinition.create({ data });
+  }
+
+  update(
+    id: number,
+    data: Partial<{
+      label: string;
+      dotColor: string;
+      sortOrder: number;
+      isActive: boolean;
+    }>,
+  ) {
+    return this.prisma.stageDefinition.update({ where: { id }, data });
   }
 }

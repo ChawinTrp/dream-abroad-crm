@@ -62,6 +62,56 @@ export class CustomersService {
     });
   }
 
+  async create(
+    data: {
+      displayName: string;
+      stageId?: number;
+      assignedAgentId?: number;
+      notes?: string;
+      avatarColor?: string;
+      lineUserId?: string;
+    },
+    agentId?: number,
+  ) {
+    // If no stage given, default to Lead.
+    let stageId = data.stageId;
+    if (!stageId) {
+      const lead = await this.prisma.stageDefinition.findFirstOrThrow({
+        where: { key: 'lead' },
+      });
+      stageId = lead.id;
+    }
+
+    // Derive initials from first two name parts.
+    const parts = data.displayName.trim().split(/\s+/).filter(Boolean);
+    const initials = (parts.length >= 2
+      ? parts[0][0] + parts[1][0]
+      : (parts[0] ?? 'NA').slice(0, 2)
+    ).toUpperCase();
+
+    const customer = await this.prisma.customer.create({
+      data: {
+        displayName: data.displayName,
+        initials,
+        avatarColor: data.avatarColor ?? '#94A3B8',
+        stageId,
+        assignedAgentId: data.assignedAgentId ?? agentId ?? null,
+        notes: data.notes ?? null,
+        lineUserId: data.lineUserId ?? null,
+        followedAt: null, // manual create — no LINE follow date known
+      },
+    });
+
+    await this.events.log({
+      customerId: customer.id,
+      agentId,
+      eventType: 'manual_create',
+      newValue: data.displayName,
+    });
+
+    return customer;
+  }
+
   async findOne(id: number) {
     const customer = await this.prisma.customer.findUnique({
       where: { id },

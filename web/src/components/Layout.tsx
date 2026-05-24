@@ -3,6 +3,7 @@ import { useMemo, useEffect } from 'react';
 import { TopBar } from './TopBar';
 import { useFetch } from '../api/hooks';
 import { setAgentId } from '../api/client';
+import { useCurrentAgent } from '../contexts/current-agent';
 import type { Customer, Agent } from '../api/types';
 
 function idleHours(lastMessageAt: string | null, lastReplyAt: string | null): number {
@@ -15,7 +16,14 @@ function idleHours(lastMessageAt: string | null, lastReplyAt: string | null): nu
 
 export function Layout() {
   const { data: customers } = useFetch<Customer[]>('/customers');
-  const { data: agents } = useFetch<Agent[]>('/agents');
+  // Admin & agent switcher need access to ALL agents including inactive ones.
+  const { data: agents } = useFetch<Agent[]>('/agents?includeInactive=true');
+  const { setAgents, currentAgent } = useCurrentAgent();
+
+  // Push fetched agents into context so switcher dropdown can render them
+  useEffect(() => {
+    if (agents) setAgents(agents);
+  }, [agents, setAgents]);
 
   const unattendedCount = useMemo(
     () =>
@@ -25,14 +33,8 @@ export function Layout() {
     [customers],
   );
 
-  // Default current agent = first agent in list (until real auth)
-  const currentAgent = useMemo(
-    () => (agents ?? []).find((a) => a.role === 'agent') ?? null,
-    [agents],
-  );
-
-  // Inject X-Agent-Id into every API request so the backend audit log
-  // attributes mutations to the right agent.
+  // Inject X-Agent-Id header globally — backend uses it for @CurrentAgent()
+  // and role checks (RolesGuard).
   useEffect(() => {
     setAgentId(currentAgent?.id ?? null);
   }, [currentAgent]);

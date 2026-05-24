@@ -14,6 +14,7 @@ export interface Agent {
   role: string;
   initials: string;
   avatarColor: string;
+  isActive: boolean;
 }
 
 export interface TagDefinition {

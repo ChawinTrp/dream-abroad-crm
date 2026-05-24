@@ -44,6 +44,7 @@ async function main() {
     { name: 'Ann Chanida', initials: 'AC', role: 'agent', avatarColor: '#3FA98A', email: 'ann@dreamabroad.co' },
     { name: 'Bua Thanaporn', initials: 'BT', role: 'agent', avatarColor: '#E08A5C', email: 'bua@dreamabroad.co' },
     { name: 'Khun Nat', initials: 'KN', role: 'manager', avatarColor: '#1A1815', email: 'nat@dreamabroad.co' },
+    { name: 'CT (Owner)', initials: 'CT', role: 'admin', avatarColor: '#DC2626', email: 'ct@dreamabroad.co' },
   ];
   const agents = await Promise.all(
     agentsData.map((a) =>

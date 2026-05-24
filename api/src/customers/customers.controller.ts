@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiQuery } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { CurrentAgent } from '../auth/current-agent.decorator';
+import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('customers')
 @Controller('customers')
@@ -43,6 +44,22 @@ export class CustomersController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.customers.findOne(id);
+  }
+
+  @Post()
+  @Roles('admin', 'manager', 'agent')
+  create(
+    @Body() body: {
+      displayName: string;
+      stageId?: number;
+      assignedAgentId?: number;
+      notes?: string;
+      avatarColor?: string;
+      lineUserId?: string;
+    },
+    @CurrentAgent() agent: any,
+  ) {
+    return this.customers.create(body, agent?.id);
   }
 
   @Patch(':id')
