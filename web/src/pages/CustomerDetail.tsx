@@ -41,8 +41,6 @@ function unattendedInfo(lastMessageAt: string | null, lastReplyAt: string | null
   return { hours, mins, severity };
 }
 
-const LINE_CHANNEL_ID = '1234567890';
-
 export function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -254,7 +252,7 @@ export function CustomerDetail() {
           </button>
           {customer.lineUserId && (
             <a
-              href={`https://chat.line.biz/${LINE_CHANNEL_ID}/chat/${customer.lineUserId}`}
+              href="https://chat.line.biz/"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600"
@@ -623,7 +621,7 @@ export function CustomerDetail() {
             <div className="px-6 py-3 flex items-center gap-3">
               {customer.lineUserId && (
                 <a
-                  href={`https://chat.line.biz/${LINE_CHANNEL_ID}/chat/${customer.lineUserId}`}
+                  href="https://chat.line.biz/"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1A1815] hover:underline"

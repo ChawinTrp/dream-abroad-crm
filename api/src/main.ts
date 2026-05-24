@@ -18,7 +18,14 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix('api');
-  app.enableCors({ origin: 'http://localhost:5173' });
+  // CORS: comma-separated list of allowed origins.
+  // Local default: Vite dev server. Production: set WEB_ORIGIN to your
+  // deployed web URL (e.g. https://dreamabroad.up.railway.app).
+  const origins = (process.env.WEB_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: origins });
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true }),
   );

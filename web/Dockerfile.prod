@@ -1,0 +1,19 @@
+# Production image — builds static assets then serves them with `serve`.
+# VITE_API_URL is baked in at build time; pass it as a Railway build arg
+# (or via Railway's "Build Variables") so the bundle calls the right API.
+FROM node:20-alpine AS builder
+WORKDIR /app
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=builder /app/dist ./dist
+EXPOSE 5173
+# -s = SPA mode (rewrites unknown routes to index.html for react-router)
+CMD ["serve", "-s", "dist", "-l", "5173"]

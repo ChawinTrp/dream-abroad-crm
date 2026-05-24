@@ -1,4 +1,8 @@
-const BASE = '/api';
+// Production builds embed VITE_API_URL (e.g. https://dreamabroad-api.up.railway.app).
+// Dev uses the Vite proxy at /api which forwards to the api container.
+const BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : '/api';
 
 let agentIdHeader: string | null = null;
 
