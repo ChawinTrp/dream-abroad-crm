@@ -108,11 +108,47 @@ export class WebhooksService {
     // Discovered via message — we don't know when they originally followed
     const customer = await this.findOrCreateCustomer(lineUserId, 'message');
 
+    // Re-engagement: if this customer was archived (cold-lead terminal),
+    // pull them back to Lead so the agent sees the conversation again.
+    // "closed" customers (graduated alumni) stay put — agent can manually
+    // re-stage if needed.
+    await this.maybeReviveFromArchive(customer.id);
+
     return this.messages.createInbound({
       customerId: customer.id,
       body: event.message.text,
       lineMessageId: event.message.id,
     });
+  }
+
+  private async maybeReviveFromArchive(customerId: number) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+      include: { stage: true },
+    });
+    if (!customer || customer.stage.key !== 'archived') return;
+
+    const leadStage = await this.prisma.stageDefinition.findFirstOrThrow({
+      where: { key: 'lead' },
+    });
+
+    await this.prisma.customer.update({
+      where: { id: customerId },
+      data: { stageId: leadStage.id },
+    });
+
+    await this.prisma.customerEvent.create({
+      data: {
+        customerId,
+        eventType: 'revived_from_archive',
+        oldValue: String(customer.stageId),
+        newValue: String(leadStage.id),
+      },
+    });
+
+    this.logger.log(
+      `Revived archived customer ${customer.displayName} (${customer.lineUserId}) -> Lead`,
+    );
   }
 
   private async handleFollowEvent(event: any) {

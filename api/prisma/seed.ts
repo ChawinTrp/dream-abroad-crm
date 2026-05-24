@@ -30,6 +30,11 @@ async function main() {
       update: {},
       create: { key: 'archived', label: 'Archived', dotColor: '#6B7280', sortOrder: 5 },
     }),
+    prisma.stageDefinition.upsert({
+      where: { key: 'closed' },
+      update: {},
+      create: { key: 'closed', label: 'Closed', dotColor: '#4B5563', sortOrder: 6 },
+    }),
   ]);
   const stageMap = Object.fromEntries(stages.map((s) => [s.key, s.id]));
 

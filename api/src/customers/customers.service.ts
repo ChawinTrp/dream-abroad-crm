@@ -26,10 +26,10 @@ export class CustomersService {
       ];
     }
 
-    // Hide archived customers by default — board, dashboard, and most
-    // queries shouldn't surface them unless explicitly opted in.
+    // Hide "terminal" stages (archived + closed) by default — board,
+    // dashboard, and most queries shouldn't surface them unless opted in.
     if (!params.includeArchived) {
-      where.stage = { key: { not: 'archived' } };
+      where.stage = { key: { notIn: ['archived', 'closed'] } };
     }
 
     let orderBy: any;

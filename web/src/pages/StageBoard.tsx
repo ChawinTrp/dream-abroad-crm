@@ -362,10 +362,11 @@ export function StageBoard() {
     [includeArchived],
   );
 
-  // Board never shows the archived column itself (it's clutter — archived
-  // customers are reachable via search/dashboard only).
+  // Board never shows terminal-state columns (archived = cold-lead-killed,
+  // closed = post-enrollment graduate). Both reachable via "Include
+  // archived/closed" toggle which calls /customers?includeArchived=true.
   const stages = useMemo(
-    () => (allStages ?? []).filter((s) => s.key !== 'archived'),
+    () => (allStages ?? []).filter((s) => s.key !== 'archived' && s.key !== 'closed'),
     [allStages],
   );
 
@@ -474,7 +475,7 @@ export function StageBoard() {
           <div className="flex-1 flex justify-end items-center gap-2">
             <label
               className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-[#6F6B65] cursor-pointer select-none"
-              title="Show archived customers (otherwise excluded from search and board)"
+              title="Show archived (cold-lead) and closed (post-enrollment) customers"
             >
               <input
                 type="checkbox"
@@ -482,7 +483,7 @@ export function StageBoard() {
                 onChange={(e) => setIncludeArchived(e.target.checked)}
                 className="w-3.5 h-3.5 rounded accent-[#1A1815]"
               />
-              Include archived
+              Include archived/closed
             </label>
             <SortMenu value={sort} onChange={setSort} />
           </div>
