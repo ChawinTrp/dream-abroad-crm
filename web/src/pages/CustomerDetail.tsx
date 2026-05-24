@@ -84,6 +84,7 @@ export function CustomerDetail() {
 
   const [savedField, setSavedField] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const notesTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -134,6 +135,18 @@ export function CustomerDetail() {
     }, 1500);
   }, [patchCustomer]);
 
+  const handleMarkReplied = useCallback(async () => {
+    if (!id) return;
+    setReplyLoading(true);
+    try {
+      await api.post(`/customers/${id}/replied`);
+      flash('reply');
+      refetch();
+    } finally {
+      setReplyLoading(false);
+    }
+  }, [id, flash, refetch]);
+
   const toggleTag = useCallback(
     async (tagDefId: number, isActive: boolean) => {
       if (isActive) {
@@ -175,6 +188,16 @@ export function CustomerDetail() {
     if (!messagesByDate[day]) messagesByDate[day] = [];
     messagesByDate[day].push(m);
   }
+
+  // "Needs reply" = customer's last inbound message is newer than agent's last reply.
+  // Uses customer-level timestamps (which webhook + markReplied keep in sync) so
+  // it works even for legacy customers whose chat history isn't fully captured.
+  const needsReply = (() => {
+    if (!customer.lastMessageAt) return false;
+    const lastIn = new Date(customer.lastMessageAt).getTime();
+    const lastOut = customer.lastReplyAt ? new Date(customer.lastReplyAt).getTime() : 0;
+    return lastIn > lastOut;
+  })();
 
   return (
     <div className="flex flex-col h-full">
@@ -563,14 +586,34 @@ export function CustomerDetail() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Bottom notice */}
-          {messages.length > 0 && messages[messages.length - 1].direction === 'in' && (
-            <div className="px-6 py-2 bg-idle-high border-t border-red-200 text-xs text-red-700 font-medium">
-              No reply sent yet · open LINE OA to respond
+          {/* Reply action bar */}
+          <div className="border-t border-border bg-white">
+            {needsReply && (
+              <div className="px-6 py-2 bg-idle-high text-xs text-red-700 font-medium border-b border-red-200">
+                No reply sent yet — reply in LINE OA, then mark below
+              </div>
+            )}
+            <div className="px-6 py-3 flex items-center gap-3">
+              {customer.lineUserId && (
+                <a
+                  href={`https://chat.line.biz/${LINE_CHANNEL_ID}/chat/${customer.lineUserId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#1A1815] hover:underline"
+                >
+                  <ExternalLink size={12} /> Open in LINE OA
+                </a>
+              )}
+              <div className="flex-1" />
+              <button
+                onClick={handleMarkReplied}
+                disabled={replyLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#1A1815] hover:bg-[#3D3A35] disabled:opacity-50 transition-colors"
+              >
+                <Check size={12} strokeWidth={2.5} />
+                {replyLoading ? 'Saving…' : 'Mark as replied'}
+              </button>
             </div>
-          )}
-          <div className="px-6 py-3 border-t border-border text-xs text-muted">
-            Chat history is read-only. To reply, use LINE OA Manager.
           </div>
         </div>
       </div>

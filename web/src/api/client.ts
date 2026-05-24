@@ -1,10 +1,18 @@
 const BASE = '/api';
 
+let agentIdHeader: string | null = null;
+
+export function setAgentId(id: number | null) {
+  agentIdHeader = id ? String(id) : null;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    ...options,
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(agentIdHeader ? { 'X-Agent-Id': agentIdHeader } : {}),
+    ...(options?.headers as Record<string, string> | undefined),
+  };
+  const res = await fetch(`${BASE}${path}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || res.statusText);

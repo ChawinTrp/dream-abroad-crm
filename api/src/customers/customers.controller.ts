@@ -51,6 +51,14 @@ export class CustomersController {
     return this.customers.update(id, data, agent?.id);
   }
 
+  @Post(':id/replied')
+  markReplied(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentAgent() agent: any,
+  ) {
+    return this.customers.markReplied(id, agent?.id);
+  }
+
   @Post(':id/tags/:tagDefId')
   addTag(
     @Param('id', ParseIntPipe) customerId: number,

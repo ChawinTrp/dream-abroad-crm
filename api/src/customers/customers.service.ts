@@ -143,6 +143,26 @@ export class CustomersService {
     });
   }
 
+  async markReplied(customerId: number, agentId?: number) {
+    const now = new Date();
+    const updated = await this.prisma.customer.update({
+      where: { id: customerId },
+      data: { lastReplyAt: now, lastReplyBy: agentId ?? null },
+      include: {
+        stage: true,
+        assignedAgent: true,
+        tags: { include: { tagDefinition: true } },
+      },
+    });
+    await this.events.log({
+      customerId,
+      agentId,
+      eventType: 'replied',
+      newValue: now.toISOString(),
+    });
+    return updated;
+  }
+
   async addTag(customerId: number, tagDefinitionId: number, agentId?: number) {
     const tagDef = await this.prisma.tagDefinition.findUniqueOrThrow({
       where: { id: tagDefinitionId },

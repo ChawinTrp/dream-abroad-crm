@@ -1,7 +1,8 @@
 import { Outlet } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { TopBar } from './TopBar';
 import { useFetch } from '../api/hooks';
+import { setAgentId } from '../api/client';
 import type { Customer, Agent } from '../api/types';
 
 function idleHours(lastMessageAt: string | null, lastReplyAt: string | null): number {
@@ -24,11 +25,17 @@ export function Layout() {
     [customers],
   );
 
-  // Default current agent = first agent in list
+  // Default current agent = first agent in list (until real auth)
   const currentAgent = useMemo(
     () => (agents ?? []).find((a) => a.role === 'agent') ?? null,
     [agents],
   );
+
+  // Inject X-Agent-Id into every API request so the backend audit log
+  // attributes mutations to the right agent.
+  useEffect(() => {
+    setAgentId(currentAgent?.id ?? null);
+  }, [currentAgent]);
 
   return (
     <div className="flex flex-col h-full">
