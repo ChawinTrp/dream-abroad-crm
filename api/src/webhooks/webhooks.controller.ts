@@ -1,5 +1,6 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Controller, Post, Body, Req, Headers, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiHeader } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
 
@@ -10,7 +11,16 @@ export class WebhooksController {
 
   @Post('line')
   @Public()
-  handleLine(@Body() body: any) {
-    return this.webhooks.handleLineWebhook(body);
+  @HttpCode(200)
+  @ApiHeader({ name: 'X-Line-Signature', required: false })
+  async handleLine(
+    @Body() body: any,
+    @Req() req: Request & { rawBody?: Buffer },
+    @Headers('x-line-signature') signature: string,
+  ) {
+    if (req.rawBody) {
+      this.webhooks.verifySignature(req.rawBody, signature);
+    }
+    return this.webhooks.handleWebhook(body);
   }
 }

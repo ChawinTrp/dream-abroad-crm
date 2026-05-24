@@ -42,6 +42,7 @@ export interface Customer {
   displayName: string;
   initials: string;
   avatarColor: string;
+  pictureUrl: string | null;
   stageId: number;
   stage: StageDefinition;
   commitmentScore: number | null;

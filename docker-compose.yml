@@ -45,5 +45,17 @@ services:
     volumes:
       - ./web/src:/app/src
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http api:3000
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"  # ngrok web inspector
+    depends_on:
+      - api
+    profiles:
+      - tunnel
+
 volumes:
   pgdata:

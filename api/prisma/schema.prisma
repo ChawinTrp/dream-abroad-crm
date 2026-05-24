@@ -43,6 +43,7 @@ model Customer {
   displayName     String    @map("display_name")
   initials        String
   avatarColor     String    @map("avatar_color")
+  pictureUrl      String?   @map("picture_url")
   stageId         Int       @map("stage_id")
   stage           StageDefinition @relation(fields: [stageId], references: [id])
   commitmentScore Int?      @map("commitment_score")

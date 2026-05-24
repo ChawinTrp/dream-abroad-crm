@@ -13,17 +13,30 @@ export class DevController {
   simulateLineMessage(
     @Body() body: { lineUserId: string; displayName?: string; text: string },
   ) {
-    return this.webhooks.handleLineWebhook({
+    // Constructs a synthetic LINE webhook payload for testing without real LINE.
+    // Types are loosened to `any` because the real LINE SDK types include
+    // fields (quoteToken, etc.) that only exist on genuine LINE events.
+    return this.webhooks.handleWebhook({
       events: [
         {
           type: 'message',
-          message: { type: 'text', text: body.text, id: `sim-${Date.now()}` },
+          mode: 'active',
+          timestamp: Date.now(),
+          message: {
+            type: 'text',
+            text: body.text,
+            id: `sim-${Date.now()}`,
+            quoteToken: 'sim',
+          },
           source: {
             type: 'user',
             userId: body.lineUserId,
             displayName: body.displayName,
-          },
-        },
+          } as any,
+          replyToken: 'sim',
+          webhookEventId: `sim-${Date.now()}`,
+          deliveryContext: { isRedelivery: false },
+        } as any,
       ],
     });
   }

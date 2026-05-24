@@ -50,7 +50,17 @@ const tagTypeMap: Record<string, { bg: string; border: string; fg: string }> = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function Avatar({ initials, color, size = 28 }: { initials: string; color: string; size?: number }) {
+function Avatar({ initials, color, pictureUrl, size = 28 }: { initials: string; color: string; pictureUrl?: string | null; size?: number }) {
+  if (pictureUrl) {
+    return (
+      <img
+        src={pictureUrl}
+        alt={initials}
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
     <div
       className="shrink-0 rounded-full flex items-center justify-center font-semibold text-white"
@@ -212,7 +222,7 @@ function CustomerCard({ customer, onOpen }: { customer: Customer; onOpen: (id: n
       <div className="px-3 pt-2.5 pb-3 flex flex-col gap-2">
         {/* Row 1: avatar + name + idle */}
         <div className="flex items-center gap-2">
-          <Avatar initials={customer.initials} color={customer.avatarColor} size={28} />
+          <Avatar initials={customer.initials} color={customer.avatarColor} pictureUrl={customer.pictureUrl} size={28} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span
