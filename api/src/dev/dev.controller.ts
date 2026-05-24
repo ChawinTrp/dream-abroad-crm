@@ -1,12 +1,22 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { ArchiveService } from '../archive/archive.service';
 import { Public } from '../auth/public.decorator';
 
 @ApiTags('dev')
 @Controller('dev')
 export class DevController {
-  constructor(private webhooks: WebhooksService) {}
+  constructor(
+    private webhooks: WebhooksService,
+    private archive: ArchiveService,
+  ) {}
+
+  @Post('run-auto-archive')
+  @Public()
+  runAutoArchive() {
+    return this.archive.runArchive();
+  }
 
   @Post('simulate-line-message')
   @Public()

@@ -14,6 +14,7 @@ export class CustomersService {
     agentId?: number;
     search?: string;
     sort?: string;
+    includeArchived?: boolean;
   }) {
     const where: any = {};
     if (params.stageId) where.stageId = params.stageId;
@@ -23,6 +24,12 @@ export class CustomersService {
         { displayName: { contains: params.search, mode: 'insensitive' } },
         { notes: { contains: params.search, mode: 'insensitive' } },
       ];
+    }
+
+    // Hide archived customers by default — board, dashboard, and most
+    // queries shouldn't surface them unless explicitly opted in.
+    if (!params.includeArchived) {
+      where.stage = { key: { not: 'archived' } };
     }
 
     let orderBy: any;

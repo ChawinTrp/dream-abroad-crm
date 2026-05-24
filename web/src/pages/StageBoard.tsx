@@ -347,15 +347,27 @@ function Column({ stage, items, onOpen }: { stage: StageDefinition; items: Custo
 
 export function StageBoard() {
   const navigate = useNavigate();
-  const { data: stages } = useFetch<StageDefinition[]>('/stages');
-  const { data: customers } = useFetch<Customer[]>('/customers');
+  const { data: allStages } = useFetch<StageDefinition[]>('/stages');
   const { data: agents } = useFetch<Agent[]>('/agents');
   const { data: allTags } = useFetch<TagDefinition[]>('/tags?type=country');
 
   const {
-    search, agentFilter, countryFilter, sort,
-    setSearch, setAgentFilter, setCountryFilter, setSort, reset,
+    search, agentFilter, countryFilter, sort, includeArchived,
+    setSearch, setAgentFilter, setCountryFilter, setSort, setIncludeArchived, reset,
   } = useBoardFilters();
+
+  // Customers list depends on includeArchived — refetch when toggled.
+  const { data: customers } = useFetch<Customer[]>(
+    `/customers?includeArchived=${includeArchived}`,
+    [includeArchived],
+  );
+
+  // Board never shows the archived column itself (it's clutter — archived
+  // customers are reachable via search/dashboard only).
+  const stages = useMemo(
+    () => (allStages ?? []).filter((s) => s.key !== 'archived'),
+    [allStages],
+  );
 
   // Current user = first agent
   const currentAgent = useMemo(() => (agents ?? []).find((a) => a.role === 'agent'), [agents]);
@@ -390,7 +402,7 @@ export function StageBoard() {
   const anyFilter = search || agentFilter !== 'all' || countryFilter !== 'All';
   const allCustomers = customers ?? [];
 
-  if (!stages || !customers || !agents) {
+  if (!allStages || !customers || !agents) {
     return (
       <div className="flex items-center justify-center h-full text-[#8C8881] text-sm">
         Loading…
@@ -458,8 +470,20 @@ export function StageBoard() {
             </div>
           </div>
 
-          {/* Sort */}
-          <div className="flex-1 flex justify-end">
+          {/* Sort + archive toggle */}
+          <div className="flex-1 flex justify-end items-center gap-2">
+            <label
+              className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-[#6F6B65] cursor-pointer select-none"
+              title="Show archived customers (otherwise excluded from search and board)"
+            >
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(e) => setIncludeArchived(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-[#1A1815]"
+              />
+              Include archived
+            </label>
             <SortMenu value={sort} onChange={setSort} />
           </div>
         </div>

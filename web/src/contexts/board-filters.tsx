@@ -8,10 +8,12 @@ interface BoardFiltersState {
   agentFilter: AgentFilter;
   countryFilter: string;
   sort: SortMode;
+  includeArchived: boolean;
   setSearch: (v: string) => void;
   setAgentFilter: (v: AgentFilter) => void;
   setCountryFilter: (v: string) => void;
   setSort: (v: SortMode) => void;
+  setIncludeArchived: (v: boolean) => void;
   reset: () => void;
 }
 
@@ -22,16 +24,22 @@ export function BoardFiltersProvider({ children }: { children: ReactNode }) {
   const [agentFilter, setAgentFilter] = useState<AgentFilter>('all');
   const [countryFilter, setCountryFilter] = useState('All');
   const [sort, setSort] = useState<SortMode>('priority');
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   const reset = () => {
     setSearch('');
     setAgentFilter('all');
     setCountryFilter('All');
+    setIncludeArchived(false);
   };
 
   return (
     <BoardFiltersContext.Provider
-      value={{ search, agentFilter, countryFilter, sort, setSearch, setAgentFilter, setCountryFilter, setSort, reset }}
+      value={{
+        search, agentFilter, countryFilter, sort, includeArchived,
+        setSearch, setAgentFilter, setCountryFilter, setSort, setIncludeArchived,
+        reset,
+      }}
     >
       {children}
     </BoardFiltersContext.Provider>

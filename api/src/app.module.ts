@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
@@ -9,10 +10,12 @@ import { CustomersModule } from './customers/customers.module';
 import { MessagesModule } from './messages/messages.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { ArchiveModule } from './archive/archive.module';
 import { DevModule } from './dev/dev.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     EventsModule,
@@ -23,6 +26,7 @@ import { DevModule } from './dev/dev.module';
     MessagesModule,
     DashboardModule,
     WebhooksModule,
+    ArchiveModule,
     ...(process.env.NODE_ENV !== 'production' ? [DevModule] : []),
   ],
 })

@@ -23,17 +23,20 @@ export class CustomersController {
   @ApiQuery({ name: 'agentId', required: false })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'sort', required: false, enum: ['priority', 'idle', 'commitment', 'name'] })
+  @ApiQuery({ name: 'includeArchived', required: false, type: Boolean })
   findAll(
     @Query('stageId') stageId?: string,
     @Query('agentId') agentId?: string,
     @Query('search') search?: string,
     @Query('sort') sort?: string,
+    @Query('includeArchived') includeArchived?: string,
   ) {
     return this.customers.findAll({
       stageId: stageId ? Number(stageId) : undefined,
       agentId: agentId ? Number(agentId) : undefined,
       search,
       sort,
+      includeArchived: includeArchived === 'true',
     });
   }
 
