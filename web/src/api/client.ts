@@ -12,7 +12,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...(agentIdHeader ? { 'X-Agent-Id': agentIdHeader } : {}),
     ...(options?.headers as Record<string, string> | undefined),
   };
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  // cache: 'no-store' prevents the browser from serving stale GET responses
+  // after a mutation. Our API doesn't set Cache-Control headers, so without
+  // this the browser may treat /api/customers/:id as cacheable and skip the
+  // refetch we explicitly trigger after a tag toggle / stage change / etc.
+  const res = await fetch(`${BASE}${path}`, { cache: 'no-store', ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || res.statusText);
