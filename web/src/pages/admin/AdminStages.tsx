@@ -15,6 +15,7 @@ export function AdminStages() {
   const { data: stages, refetch } = useFetch<StageDefinition[]>('/stages?includeInactive=true');
   const [editing, setEditing] = useState<Editable | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingToggleId, setPendingToggleId] = useState<number | null>(null);
 
   const isAdmin = currentAgent?.role === 'admin';
 
@@ -47,8 +48,17 @@ export function AdminStages() {
   };
 
   const toggleActive = async (s: StageDefinition) => {
-    await api.patch(`/stages/${s.id}`, { isActive: !s.isActive });
-    refetch();
+    // Guard against double-click race: closure captures s.isActive at render
+    // time. Without this guard, fast successive clicks both send the same
+    // !old value (no-op on the second one) — looks like "can't undo".
+    if (pendingToggleId === s.id) return;
+    setPendingToggleId(s.id);
+    try {
+      await api.patch(`/stages/${s.id}`, { isActive: !s.isActive });
+      await refetch();
+    } finally {
+      setPendingToggleId(null);
+    }
   };
 
   return (
@@ -148,8 +158,8 @@ export function AdminStages() {
                   <td className="py-2.5 text-right">
                     <div className="flex justify-end gap-1.5">
                       <GhostButton onClick={() => startEdit(s)}>Edit</GhostButton>
-                      <GhostButton onClick={() => toggleActive(s)}>
-                        <Power size={11} /> {s.isActive ? 'Disable' : 'Enable'}
+                      <GhostButton onClick={() => toggleActive(s)} disabled={pendingToggleId === s.id}>
+                        <Power size={11} /> {pendingToggleId === s.id ? '…' : s.isActive ? 'Disable' : 'Enable'}
                       </GhostButton>
                     </div>
                   </td>

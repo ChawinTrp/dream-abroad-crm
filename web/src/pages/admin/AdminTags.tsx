@@ -26,6 +26,7 @@ export function AdminTags() {
   const [activeType, setActiveType] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editable | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingId, setPendingId] = useState<number | null>(null);
 
   const isAdmin = currentAgent?.role === 'admin';
 
@@ -79,16 +80,25 @@ export function AdminTags() {
   };
 
   const toggleActive = async (t: TagDefinition) => {
-    await api.patch(`/tags/${t.id}`, { isActive: !t.isActive });
-    refetch();
+    if (pendingId === t.id) return; // prevent double-click race
+    setPendingId(t.id);
+    try {
+      await api.patch(`/tags/${t.id}`, { isActive: !t.isActive });
+      await refetch();
+    } finally {
+      setPendingId(null);
+    }
   };
 
   const remove = async (t: TagDefinition) => {
     if (!confirm(`Delete "${t.label}"? (Will fail if any customer uses it — disable instead.)`)) return;
+    if (pendingId === t.id) return;
+    setPendingId(t.id);
     try {
       await api.del(`/tags/${t.id}`);
-      refetch();
+      await refetch();
     } catch (e: any) { alert(e.message); }
+    finally { setPendingId(null); }
   };
 
   const showCountryCode = activeKey === 'interested_school';
@@ -209,10 +219,12 @@ export function AdminTags() {
                   <td className="py-2.5 text-right">
                     <div className="flex justify-end gap-1.5">
                       <GhostButton onClick={() => startEdit(t)}>Edit</GhostButton>
-                      <GhostButton onClick={() => toggleActive(t)}>
-                        <Power size={11} /> {t.isActive ? 'Disable' : 'Enable'}
+                      <GhostButton onClick={() => toggleActive(t)} disabled={pendingId === t.id}>
+                        <Power size={11} /> {pendingId === t.id ? '…' : t.isActive ? 'Disable' : 'Enable'}
                       </GhostButton>
-                      <GhostButton danger onClick={() => remove(t)}><Trash2 size={11} /></GhostButton>
+                      <GhostButton danger onClick={() => remove(t)} disabled={pendingId === t.id}>
+                        <Trash2 size={11} />
+                      </GhostButton>
                     </div>
                   </td>
                 )}

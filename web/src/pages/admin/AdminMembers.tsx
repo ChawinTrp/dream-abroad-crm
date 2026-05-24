@@ -21,6 +21,7 @@ export function AdminMembers() {
   const { data: agents, refetch } = useFetch<Agent[]>('/agents?includeInactive=true');
   const [editing, setEditing] = useState<Editable | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingId, setPendingId] = useState<number | null>(null);
 
   const isAdmin = currentAgent?.role === 'admin';
 
@@ -63,13 +64,21 @@ export function AdminMembers() {
 
   const deactivate = async (id: number) => {
     if (!confirm('Deactivate this agent? Their data is preserved; they just won\'t appear in dropdowns.')) return;
-    await api.del(`/agents/${id}`);
-    refetch();
+    if (pendingId === id) return;
+    setPendingId(id);
+    try {
+      await api.del(`/agents/${id}`);
+      await refetch();
+    } finally { setPendingId(null); }
   };
 
   const reactivate = async (id: number) => {
-    await api.patch(`/agents/${id}`, { isActive: true });
-    refetch();
+    if (pendingId === id) return;
+    setPendingId(id);
+    try {
+      await api.patch(`/agents/${id}`, { isActive: true });
+      await refetch();
+    } finally { setPendingId(null); }
   };
 
   return (
@@ -184,12 +193,12 @@ export function AdminMembers() {
                     <div className="flex justify-end gap-1.5">
                       <GhostButton onClick={() => startEdit(a)}>Edit</GhostButton>
                       {a.isActive ? (
-                        <GhostButton danger onClick={() => deactivate(a.id)}>
-                          <Trash2 size={11} /> Deactivate
+                        <GhostButton danger onClick={() => deactivate(a.id)} disabled={pendingId === a.id}>
+                          <Trash2 size={11} /> {pendingId === a.id ? '…' : 'Deactivate'}
                         </GhostButton>
                       ) : (
-                        <GhostButton onClick={() => reactivate(a.id)}>
-                          <RotateCcw size={11} /> Reactivate
+                        <GhostButton onClick={() => reactivate(a.id)} disabled={pendingId === a.id}>
+                          <RotateCcw size={11} /> {pendingId === a.id ? '…' : 'Reactivate'}
                         </GhostButton>
                       )}
                     </div>

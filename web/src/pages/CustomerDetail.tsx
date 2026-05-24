@@ -85,6 +85,8 @@ export function CustomerDetail() {
   const [savedField, setSavedField] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
+  const [pendingTagId, setPendingTagId] = useState<number | null>(null);
+  const [pendingUrgency, setPendingUrgency] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const notesTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -117,10 +119,20 @@ export function CustomerDetail() {
     async (field: string, data: Record<string, unknown>) => {
       await api.patch(`/customers/${id}`, data);
       flash(field);
-      refetch();
+      await refetch();
     },
     [id, flash, refetch],
   );
+
+  const toggleUrgency = useCallback(async () => {
+    if (!customer || pendingUrgency) return;
+    setPendingUrgency(true);
+    try {
+      await patchCustomer('urgency', { urgencyFlag: !customer.urgencyFlag });
+    } finally {
+      setPendingUrgency(false);
+    }
+  }, [customer, pendingUrgency, patchCustomer]);
 
   const handleNotesBlur = useCallback(() => {
     if (notesTimer.current) clearTimeout(notesTimer.current);
@@ -149,15 +161,25 @@ export function CustomerDetail() {
 
   const toggleTag = useCallback(
     async (tagDefId: number, isActive: boolean) => {
-      if (isActive) {
-        await api.del(`/customers/${id}/tags/${tagDefId}`);
-      } else {
-        await api.post(`/customers/${id}/tags/${tagDefId}`);
+      // Guard against double-click race: `isActive` is captured at render
+      // time. Without awaiting refetch, fast successive clicks on the same
+      // chip both see the same stale value and either both delete or both
+      // post (latter is idempotent).
+      if (pendingTagId === tagDefId) return;
+      setPendingTagId(tagDefId);
+      try {
+        if (isActive) {
+          await api.del(`/customers/${id}/tags/${tagDefId}`);
+        } else {
+          await api.post(`/customers/${id}/tags/${tagDefId}`);
+        }
+        flash('tags');
+        await refetch();
+      } finally {
+        setPendingTagId(null);
       }
-      flash('tags');
-      refetch();
     },
-    [id, flash, refetch],
+    [id, flash, refetch, pendingTagId],
   );
 
   if (!customer || !stages || !agents || !allTags) {
@@ -315,8 +337,9 @@ export function CustomerDetail() {
               <SaveFlash show={savedField === 'urgency'} />
             </div>
             <button
-              onClick={() => patchCustomer('urgency', { urgencyFlag: !customer.urgencyFlag })}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              onClick={toggleUrgency}
+              disabled={pendingUrgency}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
                 customer.urgencyFlag
                   ? 'bg-red-100 text-red-700 border border-red-300'
                   : 'bg-cream text-muted border border-border'
@@ -363,7 +386,8 @@ export function CustomerDetail() {
                   <button
                     key={t.id}
                     onClick={() => toggleTag(t.id, active)}
-                    className="text-xs font-medium px-2.5 py-1 rounded border transition-colors"
+                    disabled={pendingTagId === t.id}
+                    className="text-xs font-medium px-2.5 py-1 rounded border transition-colors disabled:opacity-50"
                     style={
                       active
                         ? { background: t.colorBg ?? '#EEEDFE', borderColor: t.colorBorder ?? '#AFA9EC', color: t.colorText ?? '#3C3489' }
@@ -393,7 +417,8 @@ export function CustomerDetail() {
                       <button
                         key={t.id}
                         onClick={() => toggleTag(t.id, active)}
-                        className="text-xs font-medium px-2.5 py-1 rounded border transition-colors"
+                        disabled={pendingTagId === t.id}
+                        className="text-xs font-medium px-2.5 py-1 rounded border transition-colors disabled:opacity-50"
                         style={
                           active
                             ? { background: t.colorBg ?? '#E1F5EE', borderColor: t.colorBorder ?? '#5DCAA5', color: t.colorText ?? '#085041' }
@@ -422,7 +447,8 @@ export function CustomerDetail() {
                   <button
                     key={t.id}
                     onClick={() => toggleTag(t.id, active)}
-                    className="text-xs font-medium px-2.5 py-1 rounded border transition-colors"
+                    disabled={pendingTagId === t.id}
+                    className="text-xs font-medium px-2.5 py-1 rounded border transition-colors disabled:opacity-50"
                     style={
                       active
                         ? { background: t.colorBg ?? '#FAECE7', borderColor: t.colorBorder ?? '#F0997B', color: t.colorText ?? '#712B13' }
@@ -449,7 +475,8 @@ export function CustomerDetail() {
                   <button
                     key={t.id}
                     onClick={() => toggleTag(t.id, active)}
-                    className="text-xs font-medium px-2.5 py-1 rounded border transition-colors"
+                    disabled={pendingTagId === t.id}
+                    className="text-xs font-medium px-2.5 py-1 rounded border transition-colors disabled:opacity-50"
                     style={
                       active
                         ? { background: t.colorBg ?? '#FAEEDA', borderColor: t.colorBorder ?? '#EF9F27', color: t.colorText ?? '#633806' }

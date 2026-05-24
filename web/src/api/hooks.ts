@@ -6,14 +6,19 @@ export function useFetch<T>(path: string, deps: unknown[] = []) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback(async (): Promise<T | null> => {
     setLoading(true);
     setError(null);
-    api
-      .get<T>(path)
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    try {
+      const result = await api.get<T>(path);
+      setData(result);
+      return result;
+    } catch (e: any) {
+      setError(e.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
   }, [path]);
 
   useEffect(() => {
