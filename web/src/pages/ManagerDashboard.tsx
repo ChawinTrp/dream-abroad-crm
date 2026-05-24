@@ -230,12 +230,20 @@ export function ManagerDashboard() {
                 >
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                        style={{ background: c.avatarColor }}
-                      >
-                        {c.initials}
-                      </div>
+                      {c.pictureUrl ? (
+                        <img
+                          src={c.pictureUrl}
+                          alt={c.initials}
+                          className="w-6 h-6 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                          style={{ background: c.avatarColor }}
+                        >
+                          {c.initials}
+                        </div>
+                      )}
                       <span className="font-medium text-ink">{c.displayName}</span>
                     </div>
                   </td>

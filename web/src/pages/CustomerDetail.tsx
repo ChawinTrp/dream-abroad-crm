@@ -166,12 +166,20 @@ export function CustomerDetail() {
         <div className="w-1/2 border-r border-border overflow-y-auto p-6 space-y-5">
           {/* Profile header */}
           <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
-              style={{ background: customer.avatarColor }}
-            >
-              {customer.initials}
-            </div>
+            {customer.pictureUrl ? (
+              <img
+                src={customer.pictureUrl}
+                alt={customer.initials}
+                className="w-12 h-12 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
+                style={{ background: customer.avatarColor }}
+              >
+                {customer.initials}
+              </div>
+            )}
             <div>
               <h2 className="text-lg font-bold text-ink">{customer.displayName}</h2>
               {customer.followedAt && (
@@ -443,12 +451,20 @@ export function CustomerDetail() {
                   return (
                     <div key={m.id} className={`flex gap-2 mb-3 ${isOut ? 'justify-end' : 'justify-start'}`}>
                       {!isOut && (
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-1"
-                          style={{ background: customer.avatarColor }}
-                        >
-                          {customer.initials}
-                        </div>
+                        customer.pictureUrl ? (
+                          <img
+                            src={customer.pictureUrl}
+                            alt={customer.initials}
+                            className="w-7 h-7 rounded-full object-cover shrink-0 mt-1"
+                          />
+                        ) : (
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-1"
+                            style={{ background: customer.avatarColor }}
+                          >
+                            {customer.initials}
+                          </div>
+                        )
                       )}
                       <div className={`max-w-[75%] ${isOut ? 'items-end' : 'items-start'}`}>
                         <div
