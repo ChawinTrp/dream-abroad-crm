@@ -253,7 +253,7 @@ We have three tiers, with a clear precedence:
 | Tier | Example | Lives in | When to change |
 |------|---------|----------|----------------|
 | Hardcoded | Idle severity 2h / 8h | TypeScript constants | Requires code review + deploy |
-| Env var | `LINE_CHANNEL_SECRET` | `.env` / Railway vars | Requires restart but no deploy |
+| Env var | `LINE_CHANNEL_SECRET` | `.env` / Fly secrets | Requires restart but no deploy |
 | DB setting | `enrolled_archive_days` | `settings` table | Live, no restart, via admin UI |
 
 **The rule we follow:** **DB wins over env wins over hardcoded.**
@@ -359,7 +359,7 @@ The discipline of saying no is half of system design. Things we chose NOT to do,
 | **GraphQL** | Already covered. One client, simple resources. |
 | **Microservices** | One developer, one repo, one deployment. Microservices solve org problems we don't have. |
 | **Search engine (Elasticsearch / Meilisearch)** | <100 customers. `ILIKE '%term%'` in Postgres is instant. Revisit at 100k rows. |
-| **CDN for static assets** | Single-region usage (Thai consultancy). Railway's edge is good enough. CDN matters when latency from far regions becomes painful. |
+| **CDN for static assets** | Single-region usage (Thai consultancy). Vercel's edge already serves the web bundle from global PoPs for free; explicit CDN only matters when origin load or self-hosted assets become a bottleneck. |
 
 The pattern: **add complexity to address a symptom, not a hypothesis.**
 
@@ -432,11 +432,11 @@ Walk through how the system breaks as scale grows:
 - **API down**: LINE retries (with redelivery enabled), then drops. Customer's LINE messages aren't lost — only our log. Acceptable for v1.
 - **DB down**: API rejects all requests with 5xx. LINE retries. Investigate quickly.
 - **LINE down**: We don't notice (no inbound). Periodic test message could detect, but overkill at our scale.
-- **Bad release**: Auto-rollback on healthcheck fail (Railway does this).
+- **Bad release**: Fly.io's healthcheck on `/api/stages` blocks bad deploys from receiving traffic — the previous machine keeps serving until the new one passes checks.
 
 ### 9. Observability
 
-- Logs: Railway built-in.
+- Logs: Fly.io built-in (`fly logs`), Vercel runtime logs in dashboard.
 - Errors: would add Sentry at >100 active users.
 - Metrics: would add OpenTelemetry → Grafana when we have multiple services.
 
