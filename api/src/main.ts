@@ -38,6 +38,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(3000);
+  // Render and most PaaS providers inject the port via $PORT. Fly.io / local
+  // both default to 3000 when the env var is absent.
+  await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
 }
 bootstrap();

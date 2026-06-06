@@ -1,0 +1,39 @@
+# Render Blueprint for the DreamAbroad CRM API.
+# Render auto-detects this file at the repo root on connect.
+# Free tier: 512MB RAM, sleeps after 15min idle (we work around via
+# UptimeRobot pinging /api/stages every 5min — see DEPLOYMENT.md).
+#
+# Region: Render free tier is restricted to Oregon (us-west). Latency from
+# Thailand is ~200ms which is acceptable for LINE webhooks (LINE itself
+# tolerates up to 2s response time).
+
+services:
+  - type: web
+    name: dreamabroad-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./api/Dockerfile.prod
+    dockerContext: ./api
+    # Healthcheck — Render uses this to verify the container is alive after
+    # deploy. We use the existing /api/stages GET (public, cheap, exercises
+    # the DB connection).
+    healthCheckPath: /api/stages
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENROLLED_ARCHIVE_DAYS
+        value: 90
+      - key: LEAD_COLD_DAYS
+        value: 90
+      # Secrets — set manually in the Render dashboard (sync: false hides
+      # them from the blueprint; Render shows a "Set value" prompt instead).
+      - key: DATABASE_URL
+        sync: false
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
