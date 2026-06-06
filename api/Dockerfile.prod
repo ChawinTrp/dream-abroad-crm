@@ -7,6 +7,10 @@ COPY prisma ./prisma
 RUN npx prisma generate
 COPY . .
 RUN npm run build
+# Compile the seed (prisma/seed.ts) to plain JS so the runtime stage can run
+# it with `node` — no ts-node needed in production. Output: dist-seed/seed.js
+RUN npx tsc prisma/seed.ts --outDir dist-seed --module commonjs \
+    --esModuleInterop --skipLibCheck --target ES2021 --moduleResolution node
 
 FROM node:20-alpine
 WORKDIR /app
@@ -16,8 +20,13 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist-seed ./dist-seed
 COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
-# db push is idempotent and safe on every boot. For real migrations
-# (when we add prisma/migrations/), swap for `prisma migrate deploy`.
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/src/main"]
+# Boot sequence:
+#   1. prisma db push  — sync schema (npx auto-fetches the prisma CLI)
+#   2. node dist-seed/seed.js — bootstrap REFERENCE data only (stages, tags,
+#      agents). Idempotent (upserts). Skips demo customers unless SEED_DEMO=true.
+#      Real customers arrive via the LINE webhook, never seeded.
+#   3. node dist/src/main — start the API
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist-seed/seed.js && node dist/src/main"]
