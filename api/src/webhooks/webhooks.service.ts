@@ -118,6 +118,9 @@ export class WebhooksService {
       customerId: customer.id,
       body: event.message.text,
       lineMessageId: event.message.id,
+      // LINE event timestamp (ms epoch) — authoritative send time, robust to
+      // redelivery/reordering. Falls back to now() inside createInbound.
+      sentAt: event.timestamp ? new Date(event.timestamp) : undefined,
     });
   }
 

@@ -123,7 +123,7 @@ model Message {
   sentAt        DateTime @map("sent_at")
   agentId       Int?     @map("agent_id")
   agent         Agent?   @relation(fields: [agentId], references: [id])
-  lineMessageId String?  @map("line_message_id")
+  lineMessageId String?  @unique @map("line_message_id")
 
   @@index([customerId, sentAt])
   @@map("messages")
